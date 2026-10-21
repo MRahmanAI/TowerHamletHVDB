@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Children &amp; Workforce Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --p: #3D52A0;
+            --p2: #7091E6;
+            --p3: #8697C4;
+            --p4: #ADBBDA;
+            --bg: #EDE8F5;
+            --card: #fff;
+            --tx: #1d2340;
+            --mu: #5d6590;
+            --bd: #ADBBDA;
+            box-sizing: border-box;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px)
+        }
+
+        @media (prefers-color-scheme:dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #141830;
+                --card: #1e2447;
+                --tx: #eef0fa;
+                --mu: #a9b2d9;
+                --bd: #3a4380
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg: #141830;
+            --card: #1e2447;
+            --tx: #eef0fa;
+            --mu: #a9b2d9;
+            --bd: #3a4380
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--tx);
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif
+        }
+
+        header {
+            background: var(--p);
+            color: #fff;
+            padding: 18px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 20px
+        }
+
+        header small {
+            opacity: .85;
+            display: block;
+            margin-top: 2px
+        }
+
+        .ctl {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        select,
+        label.btn {
+            background: #fff;
+            color: var(--p);
+            border: 0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px
+        }
+
+        label.btn input {
+            display: none
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px
+        }
+
+        .grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--bd);
+            border-radius: 12px;
+            padding: 16px
+        }
+
+        .kpi .v {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--p)
+        }
+
+        .kpi .l {
+            font-size: 13px;
+            color: var(--mu)
+        }
+
+        @media (prefers-color-scheme:dark) {
+            .kpi .v {
+                color: var(--p4)
+            }
+        }
+
+        h2 {
+            font-size: 15px;
+            margin: 0 0 12px
+        }
+
+        .row {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            margin-top: 12px
+        }
+
+        .bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+            font-size: 13px
+        }
+
+        .bar span:first-child {
+            width: 150px;
+            flex: none
+        }
+
+        .bar .t {
+            flex: 1;
+            background: var(--bg);
+            border-radius: 6px;
+            height: 20px;
+            overflow: hidden
+        }
+
+        .bar .f {
+            height: 100%;
+            border-radius: 6px
+        }
+
+        .bar b {
+            width: 44px;
+            text-align: right
+        }
+
+        .tw {
+            overflow-x: auto
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px
+        }
+
+        th,
+        td {
+            padding: 8px;
+            text-align: right;
+            border-bottom: 1px solid var(--bd)
+        }
+
+        th:first-child,
+        td:first-child {
+            text-align: left
+        }
+
+        th {
+            color: var(--mu);
+            font-weight: 600
+        }
+
+        .sv text {
+            fill: var(--tx);
+            font-size: 12px
+        }
+
+        #map polygon {
+            cursor: pointer;
+            stroke: #fff;
+            stroke-width: 3;
+            transition: opacity .15s
+        }
+
+        #map polygon:hover {
+            opacity: .85
+        }
+
+        #note {
+            font-size: 13px;
+            color: var(--mu);
+            margin-top: 12px
+        }
+
+        @media print {
+            header .ctl {
+                display: none
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div>
+            <h1>Children &amp; Workforce Dashboard</h1><small id="src">Example data</small>
+        </div>
+        <div class="ctl"><select id="loc"></select><label class="btn">Upload Excel<input type="file" id="file"
+                    accept=".xlsx,.xls"></label><button class="btn" style="border:0" onclick="print()">Print</button>
+        </div>
+    </header>
+    <main>
+        <div class="card" id="sum" style="margin-bottom:12px;border-left:6px solid var(--p);line-height:1.5"></div>
+        <div class="grid" id="kpis"></div>
+        <div class="row">
+            <div class="card">
+                <h2>Children and staff by locality</h2><svg class="sv" id="bc" viewBox="0 0 400 250"
+                    style="width:100%"></svg>
+            </div>
+            <div class="card">
+                <h2>Care level split (pie chart)</h2><svg class="sv" id="pc" viewBox="0 0 400 220"
+                    style="width:100%"></svg>
+            </div>
+        </div>
+        <div class="row">
+            <div class="card">
+                <h2>Appointments booked by locality</h2><svg class="sv" id="ab" viewBox="0 0 400 250"
+                    style="width:100%"></svg>
+            </div>
+            <div class="card" style="grid-column:1/-1">
+                <h2>Appointments month by month</h2>
+                <div class="tw"><svg class="sv" id="tr" viewBox="0 0 700 280" style="width:100%;min-width:520px"></svg>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="card">
+                <h2>Care level (active children)</h2>
+                <div id="lv"></div>
+            </div>
+            <div class="card">
+                <h2>Active children by locality</h2>
+                <div id="ch"></div>
+            </div>
+            <div class="card">
+                <h2>Staff by locality</h2>
+                <div id="st"></div>
+            </div>
+            <div class="card">
+                <h2>Appointments booked by locality</h2>
+                <div id="ap"></div>
+            </div>
+        </div>
+        <div class="card" style="margin-top:12px">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+                <h2>Tower Hamlets locality map</h2><select id="mm"
+                    style="border:1px solid var(--bd);background:var(--card);color:var(--tx)">
+                    <option value="c">Active children</option>
+                    <option value="s">Staff</option>
+                    <option value="a">Appointments</option>
+                    <option value="r">Children per staff</option>
+                </select>
+            </div><svg id="map" viewBox="0 0 380 370"
+                style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
+            <div style="font-size:12px;color:var(--mu);text-align:center">Schematic layout, not to scale. Click a
+                locality to filter.</div>
+        </div>
+        <div class="card" style="margin-top:12px">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+                <h2>Staffing risk and recommended staff</h2>
+                <div class="ctl" style="font-size:13px"><select id="rs"
+                        style="border:1px solid var(--bd);background:var(--card);color:var(--tx)">
+                        <option value="0">Current staffing</option>
+                        <option value="5">If staff drop 5%</option>
+                        <option value="10">If staff drop 10%</option>
+                        <option value="20">If staff drop 20%</option>
+                    </select><input id="rt" type="number" min="1" step="0.5" placeholder="Target children per staff"
+                        style="width:170px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)">
+                </div>
+            </div>
+            <div id="rx"></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+                <h2>New births: weekly average by locality</h2>
+                <div class="ctl" style="font-size:13px;color:var(--mu)"><label>Low per week <input id="nbL"
+                            type="number" value="30" min="0"
+                            style="width:70px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)"></label><label>High
+                        per week <input id="nbH" type="number" value="50" min="0"
+                            style="width:70px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)"></label>
+                </div>
+            </div><svg class="sv" id="nbc" viewBox="0 0 400 260"
+                style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
+            <h2 style="margin-top:16px">Births by locality as the weekly total changes (line graph)</h2><svg class="sv"
+                id="nbl" viewBox="0 0 400 265" style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:16px">
+                <h2>Yearly growth: cumulative new births by locality (5 years)</h2><label
+                    style="font-size:13px;color:var(--mu)">Yearly change in births % <input id="nbG" type="number"
+                        value="0" step="1"
+                        style="width:70px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)"></label>
+            </div><svg class="sv" id="nby" viewBox="0 0 400 280"
+                style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
+            <div id="nbx" style="margin-top:8px"></div>
+        </div>
+        <div class="card" style="margin-top:12px">
+            <h2>Locality summary</h2>
+            <div class="tw">
+                <table id="tb"></table>
+            </div>
+        </div>
+        <div id="note"></div>
+    </main>
+    <script>
+        const LOC = ["South East", "North East", "South West", "North West"], LV = ["Universal", "Universal Plus", "Universal Partnership Plus"], COL = ["#3D52A0", "#7091E6", "#8697C4", "#ADBBDA"];
+        let D;
+        function nl(v) { const s = String(v || "").toLowerCase().replace(/[^a-z]/g, ""); return LOC.find(l => l.toLowerCase().replace(/ /g, "") == s) || "Unknown" }
+        function nv(v) { const s = String(v || "").toLowerCase(); return s.includes("partnership") ? LV[2] : s.includes("plus") ? LV[1] : s.includes("universal") ? LV[0] : "Unknown" }
+        function sample() {
+            let s = 7; const r = n => (s = (s * 9301 + 49297) % 233280) / 233280 * n | 0;
+            const pick = a => a[r(a.length)];
+            return {
+                children: Array.from({ length: 420 }, () => ({ loc: pick(LOC), lv: [LV[0], LV[0], LV[0], LV[1], LV[1], LV[2]][r(6)], act: r(10) > 0 })),
+                staff: Array.from({ length: 64 }, () => ({ loc: pick(LOC) })), appts: Array.from({ length: 980 }, () => ({ loc: pick(LOC), m: mk(new Date(2026, 9 - Math.min(r(12), r(12)), 15)) }))
+            }
+        }
+        function find(row, re) { const k = Object.keys(row).find(k => re.test(k.toLowerCase())); return k ? row[k] : "" }
+        function load(buf, name) {
+            const wb = XLSX.read(buf, { type: "array", cellDates: true }), o = { children: [], staff: [], appts: [], births: [] }; let miss = [];
+            for (const sn of wb.SheetNames) {
+                const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { defval: "" }), n = sn.toLowerCase();
+                if (n.includes("child")) o.children = rows.map(r => { const st = String(find(r, /status|active/)).toLowerCase(); return { loc: nl(find(r, /local|area/)), lv: nv(find(r, /level|care|plan|categ|tier/)), act: st === "" || (st.includes("active") && !st.includes("inactive")) || st === "yes" || st === "y" } });
+                else if (n.includes("staff")) o.staff = rows.map(r => ({ loc: nl(find(r, /local|area/)) }));
+                else if (n.includes("birth")) o.births = rows.map(r => ({ loc: nl(find(r, /local|area/)) }));
+                else if (n.includes("appoint") || n.includes("booking")) o.appts = rows.map(r => ({ loc: nl(find(r, /local|area/)), m: mk(find(r, /date|month|time/)) }))
+            }
+            if (!o.children.length) miss.push("Children"); if (!o.staff.length) miss.push("Staff"); if (!o.appts.length) miss.push("Appointments");
+            D = o; document.getElementById("src").textContent = "Source: " + name + (miss.length ? " (no data found for: " + miss.join(", ") + ")" : ""); render()
+        }
+        function bars(id, items, max) { document.getElementById(id).innerHTML = items.map((x, i) => `<div class="bar"><span>${x[0]}</span><div class="t"><div class="f" style="width:${max ? x[1] / max * 100 : 0}%;background:${COL[i % 4]}"></div></div><b>${x[1]}</b></div>`).join("") }
+        function render() {
+            const f = document.getElementById("loc").value, ok = l => f == "All" || l == f;
+            const ac = D.children.filter(c => c.act), fc = ac.filter(c => ok(c.loc)), fs = D.staff.filter(s => ok(s.loc)), fa = D.appts.filter(a => ok(a.loc));
+            const k = [["Active children", fc.length], ["Total staff", fs.length], ["Appointments booked", fa.length], ["Children per staff", fs.length ? (fc.length / fs.length).toFixed(1) : "–"]];
+            document.getElementById("kpis").innerHTML = k.map(x => `<div class="card kpi"><div class="v">${x[1]}</div><div class="l">${x[0]}</div></div>`).join("");
+            const lc = LV.map(l => [l, fc.filter(c => c.lv == l).length]); bars("lv", lc, Math.max(...lc.map(x => x[1]), 1));
+            const by = (arr) => LOC.map(l => [l, arr.filter(x => x.loc == l).length]);
+            const c = by(ac), s = by(D.staff), a = by(D.appts);
+            bars("ch", c, Math.max(...c.map(x => x[1]), 1)); bars("st", s, Math.max(...s.map(x => x[1]), 1)); bars("ap", a, Math.max(...a.map(x => x[1]), 1));
+            document.getElementById("tb").innerHTML = "<tr><th>Locality</th><th>Children</th><th>Staff</th><th>Appointments</th><th>Children / staff</th><th>Appts / child</th></tr>" + LOC.map((l, i) => `<tr><td>${l}</td><td>${c[i][1]}</td><td>${s[i][1]}</td><td>${a[i][1]}</td><td>${s[i][1] ? (c[i][1] / s[i][1]).toFixed(1) : "–"}</td><td>${c[i][1] ? (a[i][1] / c[i][1]).toFixed(1) : "–"}</td></tr>`).join("") + `<tr><td><b>Total</b></td><td><b>${ac.length}</b></td><td><b>${D.staff.length}</b></td><td><b>${D.appts.length}</b></td><td><b>${D.staff.length ? (ac.length / D.staff.length).toFixed(1) : "–"}</b></td><td><b>${ac.length ? (D.appts.length / ac.length).toFixed(1) : "–"}</b></td></tr>`;
+            drawMap(c, s, a); drawCharts(c, s, a, lc); drawApptBar(a); drawTrend(f); drawRisk(c, s); drawBirths(c, s); summ(c, s, fc, fs, fa, f, lc); const u = [D.children.filter(x => x.loc == "Unknown").length, D.staff.filter(x => x.loc == "Unknown").length, D.appts.filter(x => x.loc == "Unknown").length], ul = D.children.filter(x => x.lv == "Unknown").length;
+            document.getElementById("note").textContent = (u.some(Boolean) || ul) ? `Data check: unrecognised locality – children ${u[0]}, staff ${u[1]}, appointments ${u[2]}; unrecognised care level – ${ul}. These are excluded from locality/level charts.` : "Data check: no unrecognised localities or care levels."
+        }
+        const Z = { "North West": { p: "50,110 70,60 180,25 185,130 52,135", t: [115, 85] }, "North East": { p: "180,25 300,40 320,150 185,130", t: [250, 85] }, "South West": { p: "52,135 185,130 190,215 110,205 55,170", t: [120, 170] }, "South East": { p: "185,130 320,150 330,230 310,330 250,340 235,250 190,215", t: [265, 235] } };
+        function drawMap(c, s, a) {
+            const m = document.getElementById("mm").value, f = document.getElementById("loc").value;
+            const v = LOC.map((l, i) => m == "c" ? c[i][1] : m == "s" ? s[i][1] : m == "a" ? a[i][1] : (s[i][1] ? +(c[i][1] / s[i][1]).toFixed(1) : 0)), mx = Math.max(...v, 1);
+            const mix = t => [0, 1, 2].map(j => Math.round([237, 232, 245][j] + ([61, 82, 160][j] - [237, 232, 245][j]) * t));
+            let h = ""; LOC.forEach((l, i) => {
+                const t = v[i] / mx, rgb = mix(t), z = Z[l], tc = t > .5 ? "#fff" : "#1d2340";
+                h += `<polygon points="${z.p}" fill="rgb(${rgb})" ${f == l ? 'style="stroke:#1d2340"' : ''} onclick="document.getElementById('loc').value='${f == l ? "All" : l}';render()"><title>${l}: ${v[i]}</title></polygon><text x="${z.t[0]}" y="${z.t[1]}" text-anchor="middle" fill="${tc}" font-size="12" pointer-events="none">${l}</text><text x="${z.t[0]}" y="${z.t[1] + 22}" text-anchor="middle" fill="${tc}" font-size="22" font-weight="700" pointer-events="none">${v[i]}</text>`
+            });
+            h += '<text x="60" y="240" fill="#7091E6" font-size="12" font-style="italic">River Thames</text>'; document.getElementById("map").innerHTML = h
+        }
+        const MN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        function mk(v) { let d; if (v instanceof Date) d = v; else if (typeof v == "number") d = new Date(Math.round((v - 25569) * 864e5)); else if (v) { const g = String(v).match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/); d = g ? new Date(+g[3], g[2] - 1, +g[1]) : new Date(v) } return d && !isNaN(d) ? d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") : "" }
+        function drawApptBar(a) { const mx = Math.max(...a.map(x => x[1]), 1); let h = '<line x1="10" x2="390" y1="220" y2="220" stroke="#ADBBDA"/>'; LOC.forEach((l, i) => { const x = 30 + i * 88, v = a[i][1], hh = v / mx * 180; h += `<rect x="${x}" y="${220 - hh}" width="54" height="${hh}" rx="3" fill="${COL[i]}"/><text x="${x + 27}" y="${214 - hh}" text-anchor="middle" style="font-weight:700">${v}</text><text x="${x + 27}" y="238" text-anchor="middle">${l}</text>` }); document.getElementById("ab").innerHTML = h }
+        function drawTrend(f) {
+            const el = document.getElementById("tr"), ms = [...new Set(D.appts.map(x => x.m).filter(Boolean))].sort().slice(-18); if (!ms.length) { el.innerHTML = '<text x="20" y="40">No appointment dates found. Add a date column to the Appointments sheet.</text>'; return }
+            const ser = f == "All" ? LOC : [f], all = ser.map(l => ms.map(m => D.appts.filter(x => x.loc == l && x.m == m).length)), mx = Math.max(...all.flat(), 1), W = 600, x0 = 50, st = ms.length > 1 ? W / (ms.length - 1) : 0, y = v => 230 - v / mx * 185; let h = "";
+            for (let i = 0; i <= 4; i++) { const v = Math.round(mx * i / 4); h += `<line x1="${x0}" x2="${x0 + W}" y1="${y(v)}" y2="${y(v)}" stroke="#ADBBDA" stroke-opacity=".5"/><text x="${x0 - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>` }
+            ms.forEach((m, i) => { const p = m.split("-"); h += `<text x="${x0 + i * st}" y="252" text-anchor="middle">${MN[p[1] - 1]} ${p[0].slice(2)}</text>` });
+            all.forEach((v, k) => { const col = f == "All" ? COL[k] : "#3D52A0"; h += `<polyline fill="none" stroke="${col}" stroke-width="3" points="${v.map((n, i) => (x0 + i * st) + "," + y(n)).join(" ")}"/>` + v.map((n, i) => `<circle cx="${x0 + i * st}" cy="${y(n)}" r="3.5" fill="${col}"><title>${ser[k]} ${ms[i]}: ${n}</title></circle>`).join(""); h += `<rect x="${x0 + k * 130}" y="4" width="12" height="12" rx="2" fill="${col}"/><text x="${x0 + k * 130 + 18}" y="14">${ser[k]}</text>` }); el.innerHTML = h
+        }
+
+        function rnd(t, sh) { const f = sh.map(x => Math.floor(t * x + 1e-9)); let r = t - f.reduce((p, x) => p + x, 0); sh.map((x, i) => [t * x - f[i], i]).sort((a, b) => b[0] - a[0]).slice(0, r).forEach(z => f[z[1]]++); return f }
+        function drawBirths(c, s) {
+            const g = i => +document.getElementById(i).value || 0, lo = g("nbL"), hi = Math.max(g("nbH"), lo), av = Math.round((lo + hi) / 2), el = document.getElementById("nbx"), ch = c.map(x => x[1]), st = s.map(x => x[1]), sm = a => a.reduce((p, x) => p + x, 0), bs = D.births || [], ub = bs.length > 0, w = ub ? LOC.map(l => bs.filter(x => x.loc == l).length) : ch, T = sm(w);
+            if (!T) { el.textContent = "Load children data (or a New births sheet) to split births by locality."; document.getElementById("nbc").innerHTML = ""; document.getElementById("nbl").innerHTML = ""; document.getElementById("nby").innerHTML = ""; return }
+            const sh = w.map(x => x / T), R = [lo, av, hi].map(t => rnd(t, sh)), v = sh.map((x, i) => [R[0][i], R[1][i], R[2][i]]), TS = sm(st), bps = LOC.map((l, i) => st[i] ? av * sh[i] / st[i] : 0), top = bps.indexOf(Math.max(...bps));
+            const mx = Math.max(...v.map(x => x[2]), 1), cl = ["#ADBBDA", "#3D52A0", "#7091E6"];
+            let b = '<line x1="10" x2="390" y1="225" y2="225" stroke="#ADBBDA"/><rect x="20" y="6" width="12" height="12" fill="#ADBBDA"/><text x="38" y="16">Low (' + lo + ')</text><rect x="130" y="6" width="12" height="12" fill="#3D52A0"/><text x="148" y="16">Average (' + av + ')</text><rect x="260" y="6" width="12" height="12" fill="#7091E6"/><text x="278" y="16">High (' + hi + ')</text>';
+            LOC.forEach((l, i) => { const x = 20 + i * 90; v[i].forEach((n, j) => { const hh = n / mx * 170; b += `<rect x="${x + j * 27}" y="${225 - hh}" width="24" height="${hh}" rx="3" fill="${cl[j]}"/><text x="${x + j * 27 + 12}" y="${219 - hh}" text-anchor="middle" style="font-size:10px">${n}</text>` }); b += `<text x="${x + 40}" y="243" text-anchor="middle">${l}</text>` });
+            document.getElementById("nbc").innerHTML = b;
+            const ts = [0, 1, 2, 3, 4].map(k => Math.round(lo + (hi - lo) * k / 4)), ar = ts.map(t => rnd(t, sh)), m2 = Math.max(...ar.flat(), 1), X = k => 40 + k * 82.5, Y = n => 225 - n / m2 * 170;
+            let q = '<line x1="40" x2="370" y1="225" y2="225" stroke="#ADBBDA"/>';
+            [0, .5, 1].forEach(f => { const n = Math.round(m2 * f); q += `<line x1="40" x2="370" y1="${Y(n)}" y2="${Y(n)}" stroke="#ADBBDA" stroke-opacity=".5"/><text x="32" y="${Y(n) + 4}" text-anchor="end">${n}</text>` });
+            ts.forEach((t, k) => q += `<text x="${X(k)}" y="243" text-anchor="middle">${t}</text>`);
+            LOC.forEach((l, i) => { q += `<polyline fill="none" stroke="${COL[i]}" stroke-width="3" points="${ar.map((a, k) => X(k) + "," + Y(a[i])).join(" ")}"/>` + ar.map((a, k) => `<circle cx="${X(k)}" cy="${Y(a[i])}" r="3.5" fill="${COL[i]}"><title>${l}: ${a[i]} of ${ts[k]} births</title></circle>`).join("") + `<text x="${X(4) + 4}" y="${Y(ar[4][i]) + 4}" style="font-size:10px">${ar[4][i]}</text><rect x="${20 + i * 92}" y="4" width="12" height="12" rx="2" fill="${COL[i]}"/><text x="${38 + i * 92}" y="14">${l}</text>` });
+            q += '<text x="205" y="259" text-anchor="middle" style="font-size:10px">Births per week across the borough</text>'; document.getElementById("nbl").innerHTML = q;
+            const gr = (+document.getElementById("nbG").value || 0) / 100; let cum = [0, 0, 0, 0]; const YC = [], YT = [];
+            [1, 2, 3, 4, 5].forEach(y => { const t = Math.max(Math.round(av * 52 * Math.pow(1 + gr, y - 1)), 0), a = rnd(t, sh); cum = cum.map((x, i) => x + a[i]); YC.push(cum); YT.push(sm(cum)) });
+            const m3 = Math.max(...YC.flat(), 1), X3 = k => 50 + k * 75, Y3 = n => 225 - n / m3 * 170;
+            let z = '<line x1="50" x2="350" y1="225" y2="225" stroke="#ADBBDA"/>';
+            [0, .5, 1].forEach(f => { const n = Math.round(m3 * f); z += `<line x1="50" x2="350" y1="${Y3(n)}" y2="${Y3(n)}" stroke="#ADBBDA" stroke-opacity=".5"/><text x="44" y="${Y3(n) + 4}" text-anchor="end">${n}</text>` });
+            YC.forEach((a, k) => z += `<text x="${X3(k)}" y="243" text-anchor="middle">Year ${k + 1}</text><text x="${X3(k)}" y="257" text-anchor="middle" style="font-size:10px">${YT[k]} total</text>`);
+            LOC.forEach((l, i) => { z += `<polyline fill="none" stroke="${COL[i]}" stroke-width="3" points="${YC.map((a, k) => X3(k) + "," + Y3(a[i])).join(" ")}"/>` + YC.map((a, k) => `<circle cx="${X3(k)}" cy="${Y3(a[i])}" r="3.5" fill="${COL[i]}"><title>${l}, year ${k + 1}: ${a[i]} cumulative births</title></circle>`).join("") + `<text x="${X3(4) + 5}" y="${Y3(YC[4][i]) + 4}" style="font-size:10px">${YC[4][i]}</text><rect x="${20 + i * 92}" y="4" width="12" height="12" rx="2" fill="${COL[i]}"/><text x="${38 + i * 92}" y="14">${l}</text>` });
+            z += `<text x="200" y="274" text-anchor="middle" style="font-size:10px">Cumulative births at ${av} a week, ${Math.round(gr * 100)}% yearly change</text>`; document.getElementById("nby").innerHTML = z;
+            let h = '<div class="tw"><table><tr><th>Locality</th><th>Share of births</th><th>Low / week</th><th>Average / week</th><th>High / week</th><th>Average / month</th><th>Average / year</th><th>Staff</th><th>Births per staff / week</th></tr>';
+            LOC.forEach((l, i) => { h += `<tr><td>${l}</td><td>${Math.round(sh[i] * 100)}%</td><td>${v[i][0]}</td><td><b>${v[i][1]}</b></td><td>${v[i][2]}</td><td>${Math.round(v[i][1] * 52 / 12)}</td><td>${v[i][1] * 52}</td><td>${st[i]}</td><td>${st[i] ? bps[i].toFixed(2) : "–"}</td></tr>` });
+            h += `<tr><td><b>Total</b></td><td><b>100%</b></td><td><b>${lo}</b></td><td><b>${av}</b></td><td><b>${hi}</b></td><td><b>${(av * 52 / 12).toFixed(0)}</b></td><td><b>${av * 52}</b></td><td><b>${TS}</b></td><td><b>${TS ? (av / TS).toFixed(2) : "–"}</b></td></tr></table></div><div style="font-size:14px;line-height:1.6;margin-top:8px">Births are split ${ub ? "using the locality counts in your New births sheet" : "in proportion to each locality’s active children"}. ${Math.max(...bps) > 0 ? `<b>${LOC[top]}</b> has the highest load at ${bps[top].toFixed(2)} new births per staff member a week on the average of ${av}.` : ""}</div>`; el.innerHTML = h
+        }
+        function drawRisk(c, s) {
+            const red = 1 - (+document.getElementById("rs").value) / 100, tg = parseFloat(document.getElementById("rt").value), el = document.getElementById("rx"), ch = c.map(x => x[1]), o = s.map(x => x[1]), st = o.map(x => Math.round(x * red)), TC = ch.reduce((p, x) => p + x, 0), TS = st.reduce((p, x) => p + x, 0), TO = o.reduce((p, x) => p + x, 0);
+            if (!TS || !TC) { el.textContent = "Not enough staff or children data to assess risk."; return }
+            const avg = TC / TS, avg0 = TC / TO, base = tg > 0 ? tg : avg, nm = tg > 0 ? "target" : "average", rec = ch.map(x => tg > 0 ? Math.ceil(x / base) : Math.round(TS * x / TC)), TR = rec.reduce((p, x) => p + x, 0);
+            const rk = LOC.map((l, i) => { const r = st[i] ? ch[i] / st[i] : Infinity, lv = r > base * 1.15 ? ["High risk", "#c0392b"] : r > base * 1.05 ? ["Medium risk", "#d68910"] : r < base * .85 ? ["Surplus", "#3D52A0"] : ["Balanced", "#2e8b57"]; return { l, r, lv, d: rec[i] - st[i] } });
+            let h = `<div class="grid" style="margin-bottom:12px"><div class="card kpi"><div class="v">${avg.toFixed(1)}</div><div class="l">Average children per staff member (${TC} children, ${TS} staff)</div></div><div class="card kpi"><div class="v">${TR}</div><div class="l">Recommended total staff (now ${TS})</div></div></div><div class="tw"><table><tr><th>Locality</th><th>Active children</th><th>Staff</th><th>Children per staff</th><th>Risk</th><th>Recommended staff</th><th>Change</th></tr>`;
+            rk.forEach((x, i) => { h += `<tr><td>${x.l}</td><td>${ch[i]}</td><td>${st[i]}</td><td>${isFinite(x.r) ? x.r.toFixed(1) : "–"}</td><td><span style="background:${x.lv[1]};color:#fff;padding:2px 8px;border-radius:10px;font-size:12px">${x.lv[0]}</span></td><td>${rec[i]}</td><td><b>${x.d > 0 ? "+" : ""}${x.d}</b></td></tr>` });
+            h += `<tr><td><b>Total</b></td><td><b>${TC}</b></td><td><b>${TS}</b></td><td><b>${avg.toFixed(1)}</b></td><td></td><td><b>${TR}</b></td><td><b>${TR - TS > 0 ? "+" : ""}${TR - TS}</b></td></tr></table></div><ul style="font-size:14px;line-height:1.6;padding-left:20px">`;
+            rk.forEach((x, i) => { const p = isFinite(x.r) ? Math.round(Math.abs(x.r / base - 1) * 100) : 0; if (!isFinite(x.r)) h += `<li>${x.l} has ${ch[i]} children and no staff.</li>`; else if (x.lv[0] == "High risk" || x.lv[0] == "Medium risk") h += `<li><b>${x.l}:</b> ${x.r.toFixed(1)} children per staff, ${p}% above the ${nm} of ${base.toFixed(1)}. With ${st[i]} staff it will not average out; it needs ${Math.max(x.d, 1)} more.</li>`; else if (x.lv[0] == "Surplus") h += `<li><b>${x.l}:</b> ${p}% below the ${nm}. It has about ${Math.max(-x.d, 1)} more staff than its caseload needs and could lend them to other localities.</li>` });
+            h += `</ul><div style="font-size:14px;line-height:1.6"><b>Recommended:</b> ${rec.map((v, i) => LOC[i] + " " + v).join(", ")} (${TR} staff). ` + (tg > 0 ? `At ${tg} children per staff the service needs ${Math.abs(TR - TS)} ${TR >= TS ? "more" : "fewer"} staff overall.` : `This keeps the current total and moves staff between localities to even out caseloads.`) + (red < 1 ? `<br>Scenario: a ${Math.round((1 - red) * 100)}% staff drop raises the average caseload from ${avg0.toFixed(1)} to ${avg.toFixed(1)} children per staff.` : "") + `<br><span style="color:var(--mu)">Ratios count headcount only. Children at higher care levels may need more staff time, and risk bands are ±5% and ±15% of the ${nm}.</span></div>`; el.innerHTML = h
+        }
+        function drawCharts(c, s, a, lc) {
+            const mx = Math.max(...c.map(x => x[1]), ...s.map(x => x[1]), 1); let h = '<rect x="20" y="6" width="12" height="12" fill="#3D52A0"/><text x="38" y="16">Active children</text><rect x="150" y="6" width="12" height="12" fill="#7091E6"/><text x="168" y="16">Staff</text><line x1="10" x2="390" y1="220" y2="220" stroke="#ADBBDA"/>';
+            LOC.forEach((l, i) => { const x = 20 + i * 90, hc = c[i][1] / mx * 170, hs = s[i][1] / mx * 170; h += `<rect x="${x}" y="${220 - hc}" width="30" height="${hc}" rx="3" fill="#3D52A0"/><rect x="${x + 32}" y="${220 - hs}" width="30" height="${hs}" rx="3" fill="#7091E6"/><text x="${x + 15}" y="${214 - hc}" text-anchor="middle">${c[i][1]}</text><text x="${x + 47}" y="${214 - hs}" text-anchor="middle">${s[i][1]}</text><text x="${x + 31}" y="238" text-anchor="middle">${l}</text>` });
+            document.getElementById("bc").innerHTML = h;
+            const tot = lc.reduce((p, x) => p + x[1], 0); let p = "", a0 = -Math.PI / 2;
+            lc.forEach((x, i) => {
+                if (x[1]) { const fr = x[1] / tot; if (fr > .999) p += `<circle cx="110" cy="110" r="70" fill="none" stroke="${COL[i]}" stroke-width="40"/>`; else { const a1 = a0 + fr * 2 * Math.PI, P = (r, a) => (110 + r * Math.cos(a)).toFixed(1) + " " + (110 + r * Math.sin(a)).toFixed(1), lg = fr > .5 ? 1 : 0; p += `<path d="M${P(90, a0)}A90 90 0 ${lg} 1 ${P(90, a1)}L${P(50, a1)}A50 50 0 ${lg} 0 ${P(50, a0)}Z" fill="${COL[i]}" stroke="#fff" stroke-width="2"/>`; a0 = a1 } }
+                p += `<rect x="215" y="${60 + i * 40}" width="12" height="12" rx="2" fill="${COL[i]}"/><text x="233" y="${70 + i * 40}">${x[0]}</text><text x="233" y="${86 + i * 40}" style="font-weight:700">${x[1]} (${tot ? Math.round(x[1] / tot * 100) : 0}%)</text>`
+            });
+            p += `<text x="110" y="116" text-anchor="middle" style="font-size:20px;font-weight:700">${tot}</text>`; document.getElementById("pc").innerHTML = p
+        }
+        function summ(c, s, fc, fs, fa, f, lc) {
+            const r = LOC.map((l, i) => s[i][1] ? c[i][1] / s[i][1] : 0), hi = r.indexOf(Math.max(...r)), top = [...lc].sort((x, y) => y[1] - x[1])[0], tot = lc.reduce((p, x) => p + x[1], 0);
+            document.getElementById("sum").innerHTML = `<b>Summary (${f == "All" ? "all localities" : f}):</b> ${fc.length} active children, ${fs.length} staff${fs.length ? ` (${(fc.length / fs.length).toFixed(1)} children per staff)` : ""} and ${fa.length} appointments booked. ` + (tot ? `The largest care level group is ${top[0]} at ${Math.round(top[1] / tot * 100)}%. ` : "") + (Math.max(...r) > 0 ? `Highest caseload per staff member: ${LOC[hi]} (${r[hi].toFixed(1)} children per staff).` : "")
+        }
+        document.getElementById("mm").onchange = render; document.getElementById("rs").onchange = render; document.getElementById("rt").oninput = render; document.getElementById("nbL").oninput = render; document.getElementById("nbH").oninput = render; document.getElementById("nbG").oninput = render;
+        const sel = document.getElementById("loc"); sel.innerHTML = ["All", ...LOC].map(l => `<option value="${l}">${l == "All" ? "All localities" : l}</option>`).join(""); sel.onchange = render;
+        document.getElementById("file").onchange = e => { const fl = e.target.files[0]; if (!fl) return; const r = new FileReader(); r.onload = ev => { try { load(ev.target.result, fl.name) } catch (x) { document.getElementById("note").textContent = "Couldn’t read that file." } }; r.readAsArrayBuffer(fl) };
+        D = sample(); render();
+    </script>
+</body>
+
+</html>
