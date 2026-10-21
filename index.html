@@ -112,7 +112,18 @@
             background: var(--card);
             border: 1px solid var(--bd);
             border-radius: 12px;
-            padding: 16px
+            padding: 16px;
+            box-shadow: 0 4px 14px rgba(61, 82, 160, .18), 0 1px 3px rgba(61, 82, 160, .12)
+        }
+
+        @media (prefers-color-scheme:dark) {
+            :root:not([data-theme="light"]) .card {
+                box-shadow: 0 4px 14px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .35)
+            }
+        }
+
+        :root[data-theme="dark"] .card {
+            box-shadow: 0 4px 14px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .35)
         }
 
         .kpi .v {
@@ -238,10 +249,17 @@
             <h1>Children &amp; Workforce Dashboard</h1><small id="src">Example data</small>
         </div>
         <div class="ctl"><select id="loc"></select><label class="btn">Upload Excel<input type="file" id="file"
+                    accept=".xlsx,.xls"></label><label class="btn">Upload feedback<input type="file" id="fbfile"
                     accept=".xlsx,.xls"></label><button class="btn" style="border:0" onclick="print()">Print</button>
         </div>
     </header>
     <main>
+        <div class="card" style="margin-bottom:12px">
+            <h2>Locality summary</h2>
+            <div class="tw">
+                <table id="tb"></table>
+            </div>
+        </div>
         <div class="card" id="sum" style="margin-bottom:12px;border-left:6px solid var(--p);line-height:1.5"></div>
         <div class="grid" id="kpis"></div>
         <div class="row">
@@ -264,6 +282,11 @@
                 <div class="tw"><svg class="sv" id="tr" viewBox="0 0 700 280" style="width:100%;min-width:520px"></svg>
                 </div>
             </div>
+        </div>
+        <div class="card" style="margin-top:12px">
+            <h2>Average appointments: weekly and yearly</h2>
+            <div id="aax"></div><svg class="sv" id="aac" viewBox="0 0 400 250"
+                style="width:100%;max-width:560px;display:block;margin:8px auto 0"></svg>
         </div>
         <div class="row">
             <div class="card">
@@ -334,12 +357,8 @@
                 style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
             <div id="nbx" style="margin-top:8px"></div>
         </div>
-        <div class="card" style="margin-top:12px">
-            <h2>Locality summary</h2>
-            <div class="tw">
-                <table id="tb"></table>
-            </div>
-        </div>
+        <h2 style="margin:24px 0 0;font-size:18px">Client feedback</h2>
+        <div id="fbx"></div>
         <div id="note"></div>
     </main>
     <script>
@@ -379,7 +398,7 @@
             const c = by(ac), s = by(D.staff), a = by(D.appts);
             bars("ch", c, Math.max(...c.map(x => x[1]), 1)); bars("st", s, Math.max(...s.map(x => x[1]), 1)); bars("ap", a, Math.max(...a.map(x => x[1]), 1));
             document.getElementById("tb").innerHTML = "<tr><th>Locality</th><th>Children</th><th>Staff</th><th>Appointments</th><th>Children / staff</th><th>Appts / child</th></tr>" + LOC.map((l, i) => `<tr><td>${l}</td><td>${c[i][1]}</td><td>${s[i][1]}</td><td>${a[i][1]}</td><td>${s[i][1] ? (c[i][1] / s[i][1]).toFixed(1) : "–"}</td><td>${c[i][1] ? (a[i][1] / c[i][1]).toFixed(1) : "–"}</td></tr>`).join("") + `<tr><td><b>Total</b></td><td><b>${ac.length}</b></td><td><b>${D.staff.length}</b></td><td><b>${D.appts.length}</b></td><td><b>${D.staff.length ? (ac.length / D.staff.length).toFixed(1) : "–"}</b></td><td><b>${ac.length ? (D.appts.length / ac.length).toFixed(1) : "–"}</b></td></tr>`;
-            drawMap(c, s, a); drawCharts(c, s, a, lc); drawApptBar(a); drawTrend(f); drawRisk(c, s); drawBirths(c, s); summ(c, s, fc, fs, fa, f, lc); const u = [D.children.filter(x => x.loc == "Unknown").length, D.staff.filter(x => x.loc == "Unknown").length, D.appts.filter(x => x.loc == "Unknown").length], ul = D.children.filter(x => x.lv == "Unknown").length;
+            drawMap(c, s, a); drawCharts(c, s, a, lc); drawApptBar(a); drawTrend(f); drawRisk(c, s); drawBirths(c, s); drawApptAvg(a); summ(c, s, fc, fs, fa, f, lc); const u = [D.children.filter(x => x.loc == "Unknown").length, D.staff.filter(x => x.loc == "Unknown").length, D.appts.filter(x => x.loc == "Unknown").length], ul = D.children.filter(x => x.lv == "Unknown").length;
             document.getElementById("note").textContent = (u.some(Boolean) || ul) ? `Data check: unrecognised locality – children ${u[0]}, staff ${u[1]}, appointments ${u[2]}; unrecognised care level – ${ul}. These are excluded from locality/level charts.` : "Data check: no unrecognised localities or care levels."
         }
         const Z = { "North West": { p: "50,110 70,60 180,25 185,130 52,135", t: [115, 85] }, "North East": { p: "180,25 300,40 320,150 185,130", t: [250, 85] }, "South West": { p: "52,135 185,130 190,215 110,205 55,170", t: [120, 170] }, "South East": { p: "185,130 320,150 330,230 310,330 250,340 235,250 190,215", t: [265, 235] } };
@@ -404,6 +423,16 @@
             all.forEach((v, k) => { const col = f == "All" ? COL[k] : "#3D52A0"; h += `<polyline fill="none" stroke="${col}" stroke-width="3" points="${v.map((n, i) => (x0 + i * st) + "," + y(n)).join(" ")}"/>` + v.map((n, i) => `<circle cx="${x0 + i * st}" cy="${y(n)}" r="3.5" fill="${col}"><title>${ser[k]} ${ms[i]}: ${n}</title></circle>`).join(""); h += `<rect x="${x0 + k * 130}" y="4" width="12" height="12" rx="2" fill="${col}"/><text x="${x0 + k * 130 + 18}" y="14">${ser[k]}</text>` }); el.innerHTML = h
         }
 
+        function drawApptAvg(a) {
+            const el = document.getElementById("aax"), ms = D.appts.map(x => x.m).filter(Boolean).sort();
+            if (!ms.length) { el.textContent = "No appointment dates found. Add a date column to the Appointments sheet to see weekly and yearly averages."; document.getElementById("aac").innerHTML = ""; return }
+            const p = k => { const t = k.split("-"); return +t[0] * 12 + +t[1] }, M = p(ms[ms.length - 1]) - p(ms[0]) + 1, wk = M * 52 / 12, tot = a.map(x => x[1]), T = tot.reduce((x, y) => x + y, 0), rd = Math.round;
+            let h = `<div class="grid" style="margin-bottom:12px"><div class="card kpi"><div class="v">${rd(T / wk)}</div><div class="l">Average appointments per week</div></div><div class="card kpi"><div class="v">${rd(T / M)}</div><div class="l">Average per month</div></div><div class="card kpi"><div class="v">${rd(T / M * 12)}</div><div class="l">Average per year (annualised)</div></div></div><div class="tw"><table><tr><th>Locality</th><th>Total booked</th><th>Share</th><th>Avg per week</th><th>Avg per month</th><th>Avg per year</th></tr>`;
+            LOC.forEach((l, i) => { h += `<tr><td>${l}</td><td>${tot[i]}</td><td>${T ? rd(tot[i] / T * 100) : 0}%</td><td><b>${rd(tot[i] / wk)}</b></td><td>${rd(tot[i] / M)}</td><td>${rd(tot[i] / M * 12)}</td></tr>` });
+            h += `<tr><td><b>Total</b></td><td><b>${T}</b></td><td><b>100%</b></td><td><b>${rd(T / wk)}</b></td><td><b>${rd(T / M)}</b></td><td><b>${rd(T / M * 12)}</b></td></tr></table></div><div style="font-size:13px;color:var(--mu);margin-top:8px">Based on ${M} month${M == 1 ? "" : "s"} of data (${ms[0]} to ${ms[ms.length - 1]}). Yearly figures are annualised from that period.</div>`; el.innerHTML = h;
+            const mx = Math.max(...tot.map(x => x / wk), 1); let b = '<text x="20" y="16" style="font-weight:700">Average appointments per week</text><line x1="10" x2="390" y1="225" y2="225" stroke="#ADBBDA"/>';
+            LOC.forEach((l, i) => { const x = 30 + i * 88, v = rd(tot[i] / wk), hh = tot[i] / wk / mx * 170; b += `<rect x="${x}" y="${225 - hh}" width="54" height="${hh}" rx="3" fill="${COL[i]}"/><text x="${x + 27}" y="${219 - hh}" text-anchor="middle" style="font-weight:700">${v}</text><text x="${x + 27}" y="243" text-anchor="middle">${l}</text>` }); document.getElementById("aac").innerHTML = b
+        }
         function rnd(t, sh) { const f = sh.map(x => Math.floor(t * x + 1e-9)); let r = t - f.reduce((p, x) => p + x, 0); sh.map((x, i) => [t * x - f[i], i]).sort((a, b) => b[0] - a[0]).slice(0, r).forEach(z => f[z[1]]++); return f }
         function drawBirths(c, s) {
             const g = i => +document.getElementById(i).value || 0, lo = g("nbL"), hi = Math.max(g("nbH"), lo), av = Math.round((lo + hi) / 2), el = document.getElementById("nbx"), ch = c.map(x => x[1]), st = s.map(x => x[1]), sm = a => a.reduce((p, x) => p + x, 0), bs = D.births || [], ub = bs.length > 0, w = ub ? LOC.map(l => bs.filter(x => x.loc == l).length) : ch, T = sm(w);
@@ -460,7 +489,31 @@
         document.getElementById("mm").onchange = render; document.getElementById("rs").onchange = render; document.getElementById("rt").oninput = render; document.getElementById("nbL").oninput = render; document.getElementById("nbH").oninput = render; document.getElementById("nbG").oninput = render;
         const sel = document.getElementById("loc"); sel.innerHTML = ["All", ...LOC].map(l => `<option value="${l}">${l == "All" ? "All localities" : l}</option>`).join(""); sel.onchange = render;
         document.getElementById("file").onchange = e => { const fl = e.target.files[0]; if (!fl) return; const r = new FileReader(); r.onload = ev => { try { load(ev.target.result, fl.name) } catch (x) { document.getElementById("note").textContent = "Couldn’t read that file." } }; r.readAsArrayBuffer(fl) };
-        D = sample(); render();
+        const FRK = { poor: 0, dissatisfied: 0, "below average": 1, fair: 1, average: 2, satisfied: 3, good: 3, "very satisfied": 4, excellent: 4 };
+        let F = { "n": 1549, "months": { "2025-03": 126, "2025-04": 77, "2025-05": 100, "2025-06": 99, "2025-07": 114, "2025-08": 87, "2025-09": 75, "2025-10": 72, "2025-11": 73, "2025-12": 78, "2026-01": 62, "2026-02": 70, "2026-03": 84, "2026-04": 68, "2026-05": 72, "2026-06": 65, "2026-07": 80, "2026-08": 25, "2026-09": 1, "2026-10": 121 }, "qs": [{ "q": "How would you rate the overall quality of the service you received?", "c": { "Excellent": 874, "Good": 438, "Fair": 132, "Poor": 105 } }, { "q": "Was the visit /contact carried out on the scheduled date and time?", "c": { "Yes": 1375, "No": 100, "Visit was rescheduled": 74 } }, { "q": "If the visit /contact had to be rescheduled were you satisfied with the communication from service?", "c": { "Yes": 750, "Not applicable": 692, "No": 107 } }, { "q": "How would you rate the friendliness and approachability of the practitioner?", "c": { "Excellent": 1217, "Average": 254, "Below average": 78 } }, { "q": "How satisfied were you with the information. materials and advice provided by the practitioner?", "c": { "Very satisfied": 864, "Satisfied": 555, "Dissatisfied": 130 } }, { "q": "Would you recommend the service to friends and or family ?", "c": { "Yes": 1329, "No": 220 } }], "comments": 564, "eth": { "Asian or Asian British-Bangladeshi": 757, "White British": 205, "Other Ethnic group": 188, "White Eastern European": 98, "Asian or Asian British -Indian": 69, "Black or Black British-African": 66, "Asian or Asian British-Other": 42, "Chinese": 29, "Black or Black British -Somali": 17, "Asian or Asian British-Pakistani": 17, "White Irish": 13, "Mixed/Dual Heritage -Asian": 12, "Mixed Dual Heritage Caribbean": 11, "Black or Black British-Caribbean": 10, "White Roma travelling community": 5, "Vietnamese": 3, "Mixed /Dual Heritage -African": 3, "Black or Black British Other": 2, "White Irish Gypsy/travelling community": 2 }, "post": { "E1": 435, "E3": 325, "E2": 207, "E14": 569, "Other / outside": 13 }, "src": "0-19 Service Client Feedback workbook" };
+        const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+        function pcode(v) { const t = String(v || "").trim().toUpperCase().split(/\s+/)[0]; return !t ? "" : (t == "E1" || t == "E1W") ? "E1" : ["E2", "E3", "E14"].includes(t) ? t : "Other / outside" }
+        function fbParse(rows) {
+            const ks = Object.keys(rows[0] || {}), dk = ks.find(k => /start|^date/i.test(k)), ek = ks.find(k => /ethnic/i.test(k)), pk = ks.find(k => /postcode/i.test(k)), ck = ks.find(k => /^additional/i.test(k)), cnt = k => { const c = {}; rows.forEach(r => { const v = String(r[k] == null ? "" : r[k]).trim(); if (v) c[v] = (c[v] || 0) + 1 }); return c };
+            const qs = ks.filter(k => ![dk, ek, pk, ck].includes(k) && !/^(id|email|name|start time|completion time|last modified time)$/i.test(k)).map(k => ({ q: k.replace(/\s*\(If NO.*$/i, "").trim(), c: cnt(k) })).filter(x => { const n = Object.keys(x.c).length; return n >= 2 && n <= 8 });
+            const months = {}, post = {}; rows.forEach(r => { if (dk) { const m = mk(r[dk]); if (m) months[m] = (months[m] || 0) + 1 } if (pk) { const p = pcode(r[pk]); if (p) post[p] = (post[p] || 0) + 1 } });
+            return { n: rows.length, months, qs, comments: ck ? rows.filter(r => String(r[ck] == null ? "" : r[ck]).trim()).length : 0, eth: ek ? cnt(ek) : {}, post, src: "uploaded feedback file" }
+        }
+        function hbars(o, T) { return Object.keys(o).map((l, i) => `<div class="bar"><span>${esc(l)}</span><div class="t"><div class="f" style="width:${T ? o[l] / T * 100 : 0}%;background:${COL[i % 4]}"></div></div><b style="width:84px">${o[l]} · ${Math.round(o[l] / T * 100)}%</b></div>`).join("") }
+        function drawFeedback() {
+            const el = document.getElementById("fbx"); if (!F || !F.n) { el.textContent = "No feedback loaded."; return }
+            const pc = x => Math.round(x * 100), ms = Object.keys(F.months).sort(), P = k => +k.slice(0, 4) * 12 + +k.slice(5), M = ms.length ? P(ms[ms.length - 1]) - P(ms[0]) + 1 : 0, sm = a => a.reduce((p, x) => p + x, 0);
+            const info = F.qs.map(x => { const L = Object.keys(x.c), T = sm(L.map(l => x.c[l])), o = { q: x.q, c: x.c, T, L }; if (L.filter(l => FRK[l.toLowerCase()] !== undefined).length >= 3) { L.sort((a, b) => FRK[a.toLowerCase()] - FRK[b.toLowerCase()]); o.avg = sm(L.map((l, i) => (i + 1) * x.c[l])) / T; o.max = L.length; o.pos = sm(L.filter(l => FRK[l.toLowerCase()] >= 3).map(l => x.c[l])) / T } else { const y = L.find(l => l.toLowerCase() == "yes"); if (y) { const na = sm(L.filter(l => /not applicable/i.test(l)).map(l => x.c[l])); o.pos = x.c[y] / Math.max(T - na, 1) } } return o });
+            const rec = info.find(x => /recommend/i.test(x.q)), rated = info.find(x => x.avg !== undefined), tot = sm(info.map(x => x.T));
+            const kp = [["Total responses", F.n], [M ? "Average responses per month" : "Questions answered", M ? Math.round(F.n / M) : info.length], [M ? "Average responses per week" : "", M ? Math.round(F.n / (M * 52 / 12)) : ""], ["Comments left", F.comments]];
+            if (rec && rec.pos != null) kp.push(["Would recommend", pc(rec.pos) + "%"]); if (rated) kp.push(["Average: " + rated.q.slice(0, 45) + "...", rated.avg.toFixed(1) + " / " + rated.max]);
+            let h = `<div class="grid" style="margin-top:12px">` + kp.filter(x => x[0]).map(x => `<div class="card kpi"><div class="v">${x[1]}</div><div class="l">${esc(x[0])}</div></div>`).join("") + `</div><div class="card" style="margin-top:12px"><h2>Totals and averages by question</h2><div class="tw"><table><tr><th>Question</th><th>Responses</th><th>Average score</th><th>Positive / Yes</th></tr>` + info.map(x => `<tr><td style="max-width:420px">${esc(x.q)}</td><td>${x.T}</td><td>${x.avg !== undefined ? x.avg.toFixed(1) + " / " + x.max : "–"}</td><td>${x.pos != null ? pc(x.pos) + "%" : "–"}</td></tr>`).join("") + `<tr><td><b>Total answers recorded</b></td><td><b>${tot}</b></td><td></td><td></td></tr></table></div><div style="font-size:13px;color:var(--mu);margin-top:8px">Scores run from 1 (lowest) to the top rating. Positive means the top ratings (Good or Excellent, Satisfied or Very satisfied, Excellent) or a Yes answer, excluding Not applicable. Source: ${esc(F.src || "feedback")}${ms.length ? `, ${ms[0]} to ${ms[ms.length - 1]}` : ""}.</div></div><div class="row">` + info.map(x => `<div class="card"><h2>${esc(x.q)}</h2>${hbars(Object.fromEntries(x.L.slice().reverse().map(l => [l, x.c[l]])), x.T)}${x.avg !== undefined ? `<div style="font-size:13px;color:var(--mu);margin-top:6px">Average ${x.avg.toFixed(1)} out of ${x.max} · ${pc(x.pos)}% positive</div>` : ""}</div>`).join("") + `</div>`;
+            if (ms.length) { const mx = Math.max(...ms.map(m => F.months[m]), 1), st = Math.min(35, 640 / ms.length); h += `<div class="card" style="margin-top:12px"><h2>Responses per month</h2><div class="tw"><svg class="sv" viewBox="0 0 ${ms.length * st + 50} 250" style="width:100%;min-width:${Math.min(ms.length * st + 50, 640)}px">` + ms.map((m, i) => { const v = F.months[m], hh = v / mx * 170, x = 40 + i * st; return `<rect x="${x}" y="${210 - hh}" width="${st - 8}" height="${hh}" rx="3" fill="#3D52A0"/><text x="${x + (st - 8) / 2}" y="${204 - hh}" text-anchor="middle" style="font-size:9px">${v}</text><text x="${x + (st - 8) / 2}" y="226" text-anchor="middle" style="font-size:9px">${MN[+m.slice(5) - 1]} ${m.slice(2, 4)}</text>` }).join("") + `</svg></div></div>` }
+            const top = (o, k) => { const e = Object.entries(o).sort((a, b) => b[1] - a[1]), r = {}; e.slice(0, k).forEach(x => r[x[0]] = x[1]); if (e.length > k) r["All other groups"] = sm(e.slice(k).map(x => x[1])); return r }, ethT = sm(Object.values(F.eth)), poT = sm(Object.values(F.post));
+            h += `<div class="row">` + (ethT ? `<div class="card"><h2>Respondents by ethnicity (total ${ethT})</h2>${hbars(top(F.eth, 8), ethT)}</div>` : "") + (poT ? `<div class="card"><h2>Respondents by postcode area (total ${poT})</h2>${hbars(top(F.post, 8), poT)}</div>` : "") + `</div>`; el.innerHTML = h
+        }
+        document.getElementById("fbfile").onchange = e => { const fl = e.target.files[0]; if (!fl) return; const r = new FileReader(); r.onload = ev => { try { const wb = XLSX.read(ev.target.result, { type: "array", cellDates: true }); F = fbParse(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" })); drawFeedback() } catch (x) { document.getElementById("fbx").textContent = "Couldn’t read that feedback file." } }; r.readAsArrayBuffer(fl) };
+        D = sample(); render(); drawFeedback();
     </script>
 </body>
 
