@@ -240,6 +240,76 @@
                 display: none
             }
         }
+
+        #bar {
+            position: sticky;
+            top: env(safe-area-inset-top, 0px);
+            z-index: 20;
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            align-items: center;
+            padding: 8px 16px;
+            background: var(--card);
+            border-bottom: 1px solid var(--bd);
+            box-shadow: 0 4px 12px rgba(61, 82, 160, .18);
+            font-size: 13px;
+            color: var(--mu)
+        }
+
+        #bar select {
+            border: 1px solid var(--bd);
+            background: var(--bg);
+            color: var(--tx);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            max-width: 100%
+        }
+
+        #bar label {
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        #bar .chk {
+            cursor: pointer
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0 0 auto;
+            height: env(safe-area-inset-top, 0px);
+            z-index: 30;
+            background: var(--bg)
+        }
+
+        main>section {
+            scroll-margin-top: 64px
+        }
+
+        .sv .hb:hover {
+            fill: #7091E6;
+            cursor: pointer
+        }
+
+        .sv .hp:hover {
+            r: 6;
+            cursor: pointer
+        }
+
+        body.only main>section:not(.cur) {
+            display: none
+        }
+
+        @media print {
+            #bar {
+                display: none
+            }
+        }
     </style>
 </head>
 
@@ -248,117 +318,139 @@
         <div>
             <h1>Children &amp; Workforce Dashboard</h1><small id="src">Example data</small>
         </div>
-        <div class="ctl"><select id="loc"></select><label class="btn">Upload Excel<input type="file" id="file"
-                    accept=".xlsx,.xls"></label><label class="btn">Upload feedback<input type="file" id="fbfile"
-                    accept=".xlsx,.xls"></label><button class="btn" style="border:0" onclick="print()">Print</button>
-        </div>
+        <div class="ctl"><label class="btn">Upload Excel<input type="file" id="file" accept=".xlsx,.xls"></label><label
+                class="btn">Upload feedback<input type="file" id="fbfile" accept=".xlsx,.xls"></label><label
+                class="btn">Upload A&amp;E<input type="file" id="aefile" accept=".xlsx,.xls"></label><button class="btn"
+                style="border:0" onclick="print()">Print</button></div>
     </header>
+    <div id="bar"><label>Go to section <select id="nav"></select></label><label>Locality <select
+                id="loc"></select></label><label class="chk"><input type="checkbox" id="only"> Show only this
+            section</label></div>
     <main>
-        <div class="card" style="margin-bottom:12px">
-            <h2>Locality summary</h2>
-            <div class="tw">
-                <table id="tb"></table>
-            </div>
-        </div>
-        <div class="card" id="sum" style="margin-bottom:12px;border-left:6px solid var(--p);line-height:1.5"></div>
-        <div class="grid" id="kpis"></div>
-        <div class="row">
-            <div class="card">
-                <h2>Children and staff by locality</h2><svg class="sv" id="bc" viewBox="0 0 400 250"
-                    style="width:100%"></svg>
-            </div>
-            <div class="card">
-                <h2>Care level split (pie chart)</h2><svg class="sv" id="pc" viewBox="0 0 400 220"
-                    style="width:100%"></svg>
-            </div>
-        </div>
-        <div class="row">
-            <div class="card">
-                <h2>Appointments booked by locality</h2><svg class="sv" id="ab" viewBox="0 0 400 250"
-                    style="width:100%"></svg>
-            </div>
-            <div class="card" style="grid-column:1/-1">
-                <h2>Appointments month by month</h2>
-                <div class="tw"><svg class="sv" id="tr" viewBox="0 0 700 280" style="width:100%;min-width:520px"></svg>
+        <section id="s-locality" data-t="Locality summary">
+            <div class="card" style="margin-bottom:12px">
+                <h2>Locality summary</h2>
+                <div class="tw">
+                    <table id="tb"></table>
                 </div>
             </div>
-        </div>
-        <div class="card" style="margin-top:12px">
-            <h2>Average appointments: weekly and yearly</h2>
-            <div id="aax"></div><svg class="sv" id="aac" viewBox="0 0 400 250"
-                style="width:100%;max-width:560px;display:block;margin:8px auto 0"></svg>
-        </div>
-        <div class="row">
-            <div class="card">
-                <h2>Care level (active children)</h2>
-                <div id="lv"></div>
+        </section>
+        <section id="s-overview" data-t="Overview and charts">
+            <div class="card" id="sum" style="margin-bottom:12px;border-left:6px solid var(--p);line-height:1.5"></div>
+            <div class="grid" id="kpis"></div>
+            <div class="row">
+                <div class="card">
+                    <h2>Children and staff by locality</h2><svg class="sv" id="bc" viewBox="0 0 400 250"
+                        style="width:100%"></svg>
+                </div>
+                <div class="card">
+                    <h2>Care level split (pie chart)</h2><svg class="sv" id="pc" viewBox="0 0 400 220"
+                        style="width:100%"></svg>
+                </div>
             </div>
-            <div class="card">
-                <h2>Active children by locality</h2>
-                <div id="ch"></div>
+        </section>
+        <section id="s-appts" data-t="Appointments">
+            <div class="row">
+                <div class="card" style="grid-column:1/-1">
+                    <h2>Appointments booked by locality</h2><svg class="sv" id="ab" viewBox="0 0 400 250"
+                        style="width:100%;max-width:640px;display:block;margin:0 auto"></svg>
+                </div>
+                <div class="card" style="grid-column:1/-1">
+                    <h2>Appointments month by month</h2>
+                    <div class="tw"><svg class="sv" id="tr" viewBox="0 0 700 280"
+                            style="width:100%;min-width:520px"></svg></div>
+                </div>
             </div>
-            <div class="card">
-                <h2>Staff by locality</h2>
-                <div id="st"></div>
+            <div class="card" style="margin-top:12px">
+                <h2>Average appointments: weekly and yearly</h2>
+                <div id="aax"></div><svg class="sv" id="aac" viewBox="0 0 400 250"
+                    style="width:100%;max-width:560px;display:block;margin:8px auto 0"></svg>
             </div>
-            <div class="card">
-                <h2>Appointments booked by locality</h2>
-                <div id="ap"></div>
+        </section>
+        <section id="s-levels" data-t="Care levels and map">
+            <div class="row">
+                <div class="card">
+                    <h2>Care level (active children)</h2>
+                    <div id="lv"></div>
+                </div>
+                <div class="card">
+                    <h2>Active children by locality</h2>
+                    <div id="ch"></div>
+                </div>
+                <div class="card">
+                    <h2>Staff by locality</h2>
+                    <div id="st"></div>
+                </div>
+                <div class="card">
+                    <h2>Appointments booked by locality</h2>
+                    <div id="ap"></div>
+                </div>
             </div>
-        </div>
-        <div class="card" style="margin-top:12px">
-            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
-                <h2>Tower Hamlets locality map</h2><select id="mm"
-                    style="border:1px solid var(--bd);background:var(--card);color:var(--tx)">
-                    <option value="c">Active children</option>
-                    <option value="s">Staff</option>
-                    <option value="a">Appointments</option>
-                    <option value="r">Children per staff</option>
-                </select>
-            </div><svg id="map" viewBox="0 0 380 370"
-                style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
-            <div style="font-size:12px;color:var(--mu);text-align:center">Schematic layout, not to scale. Click a
-                locality to filter.</div>
-        </div>
-        <div class="card" style="margin-top:12px">
-            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
-                <h2>Staffing risk and recommended staff</h2>
-                <div class="ctl" style="font-size:13px"><select id="rs"
+            <div class="card" style="margin-top:12px">
+                <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+                    <h2>Tower Hamlets locality map</h2><select id="mm"
                         style="border:1px solid var(--bd);background:var(--card);color:var(--tx)">
-                        <option value="0">Current staffing</option>
-                        <option value="5">If staff drop 5%</option>
-                        <option value="10">If staff drop 10%</option>
-                        <option value="20">If staff drop 20%</option>
-                    </select><input id="rt" type="number" min="1" step="0.5" placeholder="Target children per staff"
-                        style="width:170px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)">
-                </div>
+                        <option value="c">Active children</option>
+                        <option value="s">Staff</option>
+                        <option value="a">Appointments</option>
+                        <option value="r">Children per staff</option>
+                    </select>
+                </div><svg id="map" viewBox="0 0 380 370"
+                    style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
+                <div style="font-size:12px;color:var(--mu);text-align:center">Schematic layout, not to scale. Click a
+                    locality to filter.</div>
             </div>
-            <div id="rx"></div>
-        </div>
-        <div class="card" style="margin-top:12px">
-            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
-                <h2>New births: weekly average by locality</h2>
-                <div class="ctl" style="font-size:13px;color:var(--mu)"><label>Low per week <input id="nbL"
-                            type="number" value="30" min="0"
-                            style="width:70px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)"></label><label>High
-                        per week <input id="nbH" type="number" value="50" min="0"
-                            style="width:70px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)"></label>
+        </section>
+        <section id="s-risk" data-t="Staffing risk">
+            <div class="card" style="margin-top:12px">
+                <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+                    <h2>Staffing risk and recommended staff</h2>
+                    <div class="ctl" style="font-size:13px"><select id="rs"
+                            style="border:1px solid var(--bd);background:var(--card);color:var(--tx)">
+                            <option value="0">Current staffing</option>
+                            <option value="5">If staff drop 5%</option>
+                            <option value="10">If staff drop 10%</option>
+                            <option value="20">If staff drop 20%</option>
+                        </select><input id="rt" type="number" min="1" step="0.5" placeholder="Target children per staff"
+                            style="width:170px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)">
+                    </div>
                 </div>
-            </div><svg class="sv" id="nbc" viewBox="0 0 400 260"
-                style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
-            <h2 style="margin-top:16px">Births by locality as the weekly total changes (line graph)</h2><svg class="sv"
-                id="nbl" viewBox="0 0 400 265" style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
-            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:16px">
-                <h2>Yearly growth: cumulative new births by locality (5 years)</h2><label
-                    style="font-size:13px;color:var(--mu)">Yearly change in births % <input id="nbG" type="number"
-                        value="0" step="1"
-                        style="width:70px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)"></label>
-            </div><svg class="sv" id="nby" viewBox="0 0 400 280"
-                style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
-            <div id="nbx" style="margin-top:8px"></div>
-        </div>
-        <h2 style="margin:24px 0 0;font-size:18px">Client feedback</h2>
-        <div id="fbx"></div>
+                <div id="rx"></div>
+            </div>
+        </section>
+        <section id="s-births" data-t="New births">
+            <div class="card" style="margin-top:12px">
+                <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+                    <h2>New births: weekly average by locality</h2>
+                    <div class="ctl" style="font-size:13px;color:var(--mu)"><label>Low per week <input id="nbL"
+                                type="number" value="30" min="0"
+                                style="width:70px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)"></label><label>High
+                            per week <input id="nbH" type="number" value="50" min="0"
+                                style="width:70px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)"></label>
+                    </div>
+                </div><svg class="sv" id="nbc" viewBox="0 0 400 260"
+                    style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
+                <h2 style="margin-top:16px">Births by locality as the weekly total changes (line graph)</h2><svg
+                    class="sv" id="nbl" viewBox="0 0 400 265"
+                    style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
+                <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:16px">
+                    <h2>Yearly growth: cumulative new births by locality (5 years)</h2><label
+                        style="font-size:13px;color:var(--mu)">Yearly change in births % <input id="nbG" type="number"
+                            value="0" step="1"
+                            style="width:70px;padding:7px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)"></label>
+                </div><svg class="sv" id="nby" viewBox="0 0 400 280"
+                    style="width:100%;max-width:560px;display:block;margin:0 auto"></svg>
+                <div id="nbx" style="margin-top:8px"></div>
+            </div>
+        </section>
+        <section id="s-feedback" data-t="Client feedback">
+            <h2 style="margin:24px 0 0;font-size:18px">Client feedback</h2>
+            <div id="fbx"></div>
+        </section>
+        <section id="s-ae" data-t="A&amp;E reports">
+            <h2 style="margin:24px 0 0;font-size:18px">A&amp;E reports</h2>
+            <div id="aex"></div>
+        </section>
         <div id="note"></div>
     </main>
     <script>
@@ -414,13 +506,14 @@
         }
         const MN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         function mk(v) { let d; if (v instanceof Date) d = v; else if (typeof v == "number") d = new Date(Math.round((v - 25569) * 864e5)); else if (v) { const g = String(v).match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/); d = g ? new Date(+g[3], g[2] - 1, +g[1]) : new Date(v) } return d && !isNaN(d) ? d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") : "" }
+        function tt(l, m, n, pv) { return `${l}, ${MN[+m.slice(5) - 1]} ${m.slice(0, 4)}: ${n} appointments` + (pv == null ? "" : ` (${n - pv >= 0 ? "+" : ""}${n - pv} vs previous month)`) }
         function drawApptBar(a) { const mx = Math.max(...a.map(x => x[1]), 1); let h = '<line x1="10" x2="390" y1="220" y2="220" stroke="#ADBBDA"/>'; LOC.forEach((l, i) => { const x = 30 + i * 88, v = a[i][1], hh = v / mx * 180; h += `<rect x="${x}" y="${220 - hh}" width="54" height="${hh}" rx="3" fill="${COL[i]}"/><text x="${x + 27}" y="${214 - hh}" text-anchor="middle" style="font-weight:700">${v}</text><text x="${x + 27}" y="238" text-anchor="middle">${l}</text>` }); document.getElementById("ab").innerHTML = h }
         function drawTrend(f) {
             const el = document.getElementById("tr"), ms = [...new Set(D.appts.map(x => x.m).filter(Boolean))].sort().slice(-18); if (!ms.length) { el.innerHTML = '<text x="20" y="40">No appointment dates found. Add a date column to the Appointments sheet.</text>'; return }
             const ser = f == "All" ? LOC : [f], all = ser.map(l => ms.map(m => D.appts.filter(x => x.loc == l && x.m == m).length)), mx = Math.max(...all.flat(), 1), W = 600, x0 = 50, st = ms.length > 1 ? W / (ms.length - 1) : 0, y = v => 230 - v / mx * 185; let h = "";
             for (let i = 0; i <= 4; i++) { const v = Math.round(mx * i / 4); h += `<line x1="${x0}" x2="${x0 + W}" y1="${y(v)}" y2="${y(v)}" stroke="#ADBBDA" stroke-opacity=".5"/><text x="${x0 - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>` }
             ms.forEach((m, i) => { const p = m.split("-"); h += `<text x="${x0 + i * st}" y="252" text-anchor="middle">${MN[p[1] - 1]} ${p[0].slice(2)}</text>` });
-            all.forEach((v, k) => { const col = f == "All" ? COL[k] : "#3D52A0"; h += `<polyline fill="none" stroke="${col}" stroke-width="3" points="${v.map((n, i) => (x0 + i * st) + "," + y(n)).join(" ")}"/>` + v.map((n, i) => `<circle cx="${x0 + i * st}" cy="${y(n)}" r="3.5" fill="${col}"><title>${ser[k]} ${ms[i]}: ${n}</title></circle>`).join(""); h += `<rect x="${x0 + k * 130}" y="4" width="12" height="12" rx="2" fill="${col}"/><text x="${x0 + k * 130 + 18}" y="14">${ser[k]}</text>` }); el.innerHTML = h
+            all.forEach((v, k) => { const col = f == "All" ? COL[k] : "#3D52A0"; h += `<polyline fill="none" stroke="${col}" stroke-width="3" points="${v.map((n, i) => (x0 + i * st) + "," + y(n)).join(" ")}"/>` + v.map((n, i) => `<circle cx="${x0 + i * st}" cy="${y(n)}" r="10" fill="transparent"><title>${tt(ser[k], ms[i], n, i ? v[i - 1] : null)}</title></circle><circle class="hp" cx="${x0 + i * st}" cy="${y(n)}" r="3.5" fill="${col}"><title>${tt(ser[k], ms[i], n, i ? v[i - 1] : null)}</title></circle>`).join(""); h += `<rect x="${x0 + k * 130}" y="4" width="12" height="12" rx="2" fill="${col}"/><text x="${x0 + k * 130 + 18}" y="14">${ser[k]}</text>` }); el.innerHTML = h
         }
 
         function drawApptAvg(a) {
@@ -508,12 +601,46 @@
             const kp = [["Total responses", F.n], [M ? "Average responses per month" : "Questions answered", M ? Math.round(F.n / M) : info.length], [M ? "Average responses per week" : "", M ? Math.round(F.n / (M * 52 / 12)) : ""], ["Comments left", F.comments]];
             if (rec && rec.pos != null) kp.push(["Would recommend", pc(rec.pos) + "%"]); if (rated) kp.push(["Average: " + rated.q.slice(0, 45) + "...", rated.avg.toFixed(1) + " / " + rated.max]);
             let h = `<div class="grid" style="margin-top:12px">` + kp.filter(x => x[0]).map(x => `<div class="card kpi"><div class="v">${x[1]}</div><div class="l">${esc(x[0])}</div></div>`).join("") + `</div><div class="card" style="margin-top:12px"><h2>Totals and averages by question</h2><div class="tw"><table><tr><th>Question</th><th>Responses</th><th>Average score</th><th>Positive / Yes</th></tr>` + info.map(x => `<tr><td style="max-width:420px">${esc(x.q)}</td><td>${x.T}</td><td>${x.avg !== undefined ? x.avg.toFixed(1) + " / " + x.max : "–"}</td><td>${x.pos != null ? pc(x.pos) + "%" : "–"}</td></tr>`).join("") + `<tr><td><b>Total answers recorded</b></td><td><b>${tot}</b></td><td></td><td></td></tr></table></div><div style="font-size:13px;color:var(--mu);margin-top:8px">Scores run from 1 (lowest) to the top rating. Positive means the top ratings (Good or Excellent, Satisfied or Very satisfied, Excellent) or a Yes answer, excluding Not applicable. Source: ${esc(F.src || "feedback")}${ms.length ? `, ${ms[0]} to ${ms[ms.length - 1]}` : ""}.</div></div><div class="row">` + info.map(x => `<div class="card"><h2>${esc(x.q)}</h2>${hbars(Object.fromEntries(x.L.slice().reverse().map(l => [l, x.c[l]])), x.T)}${x.avg !== undefined ? `<div style="font-size:13px;color:var(--mu);margin-top:6px">Average ${x.avg.toFixed(1)} out of ${x.max} · ${pc(x.pos)}% positive</div>` : ""}</div>`).join("") + `</div>`;
-            if (ms.length) { const mx = Math.max(...ms.map(m => F.months[m]), 1), st = Math.min(35, 640 / ms.length); h += `<div class="card" style="margin-top:12px"><h2>Responses per month</h2><div class="tw"><svg class="sv" viewBox="0 0 ${ms.length * st + 50} 250" style="width:100%;min-width:${Math.min(ms.length * st + 50, 640)}px">` + ms.map((m, i) => { const v = F.months[m], hh = v / mx * 170, x = 40 + i * st; return `<rect x="${x}" y="${210 - hh}" width="${st - 8}" height="${hh}" rx="3" fill="#3D52A0"/><text x="${x + (st - 8) / 2}" y="${204 - hh}" text-anchor="middle" style="font-size:9px">${v}</text><text x="${x + (st - 8) / 2}" y="226" text-anchor="middle" style="font-size:9px">${MN[+m.slice(5) - 1]} ${m.slice(2, 4)}</text>` }).join("") + `</svg></div></div>` }
+            if (ms.length) { const mx = Math.max(...ms.map(m => F.months[m]), 1), st = Math.min(35, 640 / ms.length); h += `<div class="card" style="margin-top:12px"><h2>Responses per month</h2><div class="tw"><svg class="sv" viewBox="0 0 ${ms.length * st + 50} 250" style="width:100%;min-width:${Math.min(ms.length * st + 50, 640)}px">` + ms.map((m, i) => { const v = F.months[m], hh = v / mx * 170, x = 40 + i * st, fm = MN[+m.slice(5) - 1] + " " + m.slice(0, 4), dv = v - Math.round(F.n / M), tip = `${fm}: ${v} responses (${pc(v / F.n)}% of all responses). ${dv >= 0 ? dv + " above" : -dv + " below"} the monthly average of ${Math.round(F.n / M)}.${i == ms.length - 1 ? " Latest month, may be partial." : ""}`; return `<rect x="${x - 1}" y="30" width="${st - 1}" height="196" fill="transparent"><title>${tip}</title></rect><rect class="hb" x="${x}" y="${210 - hh}" width="${st - 8}" height="${hh}" rx="3" fill="#3D52A0"><title>${tip}</title></rect><text x="${x + (st - 8) / 2}" y="${204 - hh}" text-anchor="middle" style="font-size:9px">${v}</text><text x="${x + (st - 8) / 2}" y="226" text-anchor="middle" style="font-size:9px">${MN[+m.slice(5) - 1]} ${m.slice(2, 4)}</text>` }).join("") + `</svg></div></div>` }
             const top = (o, k) => { const e = Object.entries(o).sort((a, b) => b[1] - a[1]), r = {}; e.slice(0, k).forEach(x => r[x[0]] = x[1]); if (e.length > k) r["All other groups"] = sm(e.slice(k).map(x => x[1])); return r }, ethT = sm(Object.values(F.eth)), poT = sm(Object.values(F.post));
             h += `<div class="row">` + (ethT ? `<div class="card"><h2>Respondents by ethnicity (total ${ethT})</h2>${hbars(top(F.eth, 8), ethT)}</div>` : "") + (poT ? `<div class="card"><h2>Respondents by postcode area (total ${poT})</h2>${hbars(top(F.post, 8), poT)}</div>` : "") + `</div>`; el.innerHTML = h
         }
         document.getElementById("fbfile").onchange = e => { const fl = e.target.files[0]; if (!fl) return; const r = new FileReader(); r.onload = ev => { try { const wb = XLSX.read(ev.target.result, { type: "array", cellDates: true }); F = fbParse(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" })); drawFeedback() } catch (x) { document.getElementById("fbx").textContent = "Couldn’t read that feedback file." } }; r.readAsArrayBuffer(fl) };
-        D = sample(); render(); drawFeedback();
+        let A = { "n": 4388, "first": "2022-10-10", "last": "2026-10-21", "months": { "2022-10": 1, "2023-01": 3, "2023-03": 15, "2023-04": 45, "2023-05": 13, "2024-03": 3, "2024-04": 1, "2024-06": 11, "2024-07": 59, "2024-08": 71, "2024-09": 155, "2024-10": 181, "2024-11": 216, "2024-12": 255, "2025-01": 159, "2025-02": 137, "2025-03": 159, "2025-04": 158, "2025-05": 138, "2025-06": 144, "2025-07": 195, "2025-08": 191, "2025-09": 249, "2025-10": 187, "2025-11": 145, "2025-12": 130, "2026-01": 54, "2026-02": 115, "2026-03": 91, "2026-04": 117, "2026-05": 117, "2026-06": 234, "2026-07": 183, "2026-08": 169, "2026-09": 175, "2026-10": 112 }, "years": { "2022": 1, "2023": 76, "2024": 952, "2025": 1992, "2026": 1367 }, "wd": [1071, 805, 914, 741, 655, 101, 101], "nn": 1209, "cats": { "Amber: reviewed after 5 days": 398, "Amber: reviewed within 5 days": 489, "Amber notification (timing not recorded)": 197, "Red: reviewed after 2 days": 36, "Frequent attender": 4, "Red: reviewed within 2 days": 56, "Other notes": 12, "Red notification (timing not recorded)": 16, "No category recorded": 1 } };
+        function aeCat(t) { const s = String(t == null ? "" : t).toLowerCase().trim(); if (!s) return ""; if (s.includes("amber")) return /within 5/.test(s) ? "Amber: reviewed within 5 days" : /after 5/.test(s) ? "Amber: reviewed after 5 days" : "Amber notification (timing not recorded)"; if (/\bred\b|urgent/.test(s)) return /within 2/.test(s) ? "Red: reviewed within 2 days" : /after 2/.test(s) ? "Red: reviewed after 2 days" : "Red notification (timing not recorded)"; return s.includes("frequent") ? "Frequent attender" : "Other notes" }
+        function aeParse(rows) {
+            const ks = Object.keys(rows[0] || {}), d1 = ks.find(k => /^date$/i.test(k)), d2 = ks.find(k => /^date[._ ]?1$/i.test(k)), tk = ks.find(k => /associated/i.test(k)), months = {}, years = {}, wd = [0, 0, 0, 0, 0, 0, 0], cats = {}; let n = 0, nn = 0, mn = Infinity, mx = -Infinity;
+            rows.forEach(r => {
+                const d = r[d1]; if (d instanceof Date && !isNaN(d)) { n++; const m = mk(d); months[m] = (months[m] || 0) + 1; years[m.slice(0, 4)] = (years[m.slice(0, 4)] || 0) + 1; wd[(d.getDay() + 6) % 7]++; mn = Math.min(mn, +d); mx = Math.max(mx, +d) }
+                const t = tk ? String(r[tk] == null ? "" : r[tk]).trim() : "", e = d2 ? r[d2] : ""; if (t || (e instanceof Date && !isNaN(e))) { nn++; const c = aeCat(t) || "No category recorded"; cats[c] = (cats[c] || 0) + 1 }
+            });
+            const f = t => { const d = new Date(t); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") };
+            return { n, first: n ? f(mn) : "", last: n ? f(mx) : "", months, years, wd, nn, cats }
+        }
+        function drawAE() {
+            const el = document.getElementById("aex"); if (!A || !A.n) { el.textContent = "No A&E dates found. The first column should be named Date."; return }
+            const sm = a => a.reduce((p, x) => p + x, 0), ms = Object.keys(A.months).sort(), P = k => +k.slice(0, 4) * 12 + +k.slice(5), K = i => Math.floor((i - 1) / 12) + "-" + String((i - 1) % 12 + 1).padStart(2, "0"), fd = s => +s.slice(8) + " " + MN[+s.slice(5, 7) - 1] + " " + s.slice(0, 4);
+            const st0 = ms.find(m => A.months[m] >= 50) || ms[0], lf = ms.length > 1 ? ms[ms.length - 2] : ms[0], rng = []; for (let i = P(st0); i <= P(lf); i++)rng.push(K(i));
+            const tot = sm(rng.map(m => A.months[m] || 0)), avgM = rng.length ? tot / rng.length : 0, l3 = rng.slice(-3).reduce((p, m) => p + (A.months[m] || 0), 0), p3 = rng.slice(-6, -3).reduce((p, m) => p + (A.months[m] || 0), 0), ch = p3 ? Math.round((l3 - p3) / p3 * 100) : null, pk = ms.reduce((b, m) => A.months[m] > A.months[b] ? m : b, ms[0]);
+            const cg = k => A.cats[k] || 0, aw = cg("Amber: reviewed within 5 days"), aa = cg("Amber: reviewed after 5 days"), rw = cg("Red: reviewed within 2 days"), ra = cg("Red: reviewed after 2 days"), pc = x => Math.round(x * 100);
+            const kp = [["Total A&E reports", A.n.toLocaleString()], ["Average per month (" + MN[+st0.slice(5) - 1] + " " + st0.slice(2, 4) + " to " + MN[+lf.slice(5) - 1] + " " + lf.slice(2, 4) + ")", Math.round(avgM)], ["Average per week", Math.round(avgM * 12 / 52)], ["Notification entries categorised", A.nn.toLocaleString()], ["Busiest month", MN[+pk.slice(5) - 1] + " " + pk.slice(0, 4) + " (" + A.months[pk] + ")"]];
+            if (ch !== null) kp.push(["Last 3 months vs previous 3", (ch > 0 ? "+" : "") + ch + "%"]);
+            if (aw + aa) kp.push(["Amber reviewed within 5 days", pc(aw / (aw + aa)) + "% (" + aw + " of " + (aw + aa) + ")"]); if (rw + ra) kp.push(["Red reviewed within 2 days", pc(rw / (rw + ra)) + "% (" + rw + " of " + (rw + ra) + ")"]);
+            let h = `<div class="grid" style="margin-top:12px">` + kp.map(x => `<div class="card kpi"><div class="v" style="font-size:${String(x[1]).length > 9 ? 22 : 32}px">${esc(x[1])}</div><div class="l">${esc(x[0])}</div></div>`).join("") + `</div>`;
+            const mx = Math.max(...ms.map(m => A.months[m]), 1), st = Math.min(35, 640 / ms.length);
+            h += `<div class="card" style="margin-top:12px"><h2>A&amp;E reports per month</h2><div class="tw"><svg class="sv" viewBox="0 0 ${Math.round(ms.length * st + 50)} 250" style="width:100%;min-width:${Math.min(Math.round(ms.length * st + 50), 640)}px">` + ms.map((m, i) => { const v = A.months[m], hh = v / mx * 170, x = 40 + i * st, fm = MN[+m.slice(5) - 1] + " " + m.slice(0, 4), dv = v - Math.round(avgM), tip = `${fm}: ${v} A&amp;E reports (${pc(v / A.n)}% of all reports). ${dv >= 0 ? dv + " above" : -dv + " below"} the monthly average of ${Math.round(avgM)}.${i == ms.length - 1 ? " Partial month." : ""}`; return `<rect x="${x - 1}" y="30" width="${st - 1}" height="196" fill="transparent"><title>${tip}</title></rect><rect class="hb" x="${x}" y="${210 - hh}" width="${st - 3}" height="${hh}" rx="2" fill="#3D52A0"><title>${tip}</title></rect><text x="${x + (st - 3) / 2}" y="${204 - hh}" text-anchor="middle" style="font-size:8px">${v}</text>` + (st >= 28 || i % 3 == 0 ? `<text x="${x + (st - 3) / 2}" y="226" text-anchor="middle" style="font-size:9px">${MN[+m.slice(5) - 1]} ${m.slice(2, 4)}</text>` : "") }).join("") + `</svg></div><div style="font-size:13px;color:var(--mu)">${fd(A.first)} to ${fd(A.last)}. The latest month is partial and left out of the averages.</div></div>`;
+            const wn = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], wo = {}; A.wd.forEach((v, i) => wo[wn[i]] = v); const co = {}; Object.keys(A.cats).sort((a, b) => A.cats[b] - A.cats[a]).forEach(k => co[k] = A.cats[k]);
+            h += `<div class="row"><div class="card"><h2>Reports by weekday</h2>${hbars(wo, A.n)}</div><div class="card"><h2>Notification category (total ${A.nn})</h2>${hbars(co, A.nn)}</div></div>`;
+            h += `<div class="card" style="margin-top:12px"><h2>Reports per year</h2><div class="tw"><table><tr><th>Year</th><th>Reports</th><th>Share</th></tr>` + Object.keys(A.years).sort().map(y => `<tr><td>${y}</td><td>${A.years[y]}</td><td>${pc(A.years[y] / A.n)}%</td></tr>`).join("") + `<tr><td><b>Total</b></td><td><b>${A.n}</b></td><td><b>100%</b></td></tr></table></div><div style="font-size:13px;color:var(--mu);margin-top:8px">Review timeliness = reviewed within target (5 days Amber, 2 days Red) out of those where timing was recorded. Free-text notes are not stored in this dashboard.</div></div>`;
+            el.innerHTML = h
+        }
+        document.getElementById("aefile").onchange = e => { const fl = e.target.files[0]; if (!fl) return; const r = new FileReader(); r.onload = ev => { try { const wb = XLSX.read(ev.target.result, { type: "array", cellDates: true }); A = aeParse(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" })); drawAE() } catch (x) { document.getElementById("aex").textContent = "Couldn’t read that A&E file." } }; r.readAsArrayBuffer(fl) };
+        const SECS = [...document.querySelectorAll("main>section")], nav = document.getElementById("nav"), only = document.getElementById("only");
+        nav.innerHTML = SECS.map(s => `<option value="${s.id}">${s.dataset.t}</option>`).join("");
+        nav.onchange = () => { const s = document.getElementById(nav.value); if (only.checked) { SECS.forEach(x => x.classList.toggle("cur", x === s)); scrollTo({ top: 0 }) } else s.scrollIntoView({ behavior: "smooth", block: "start" }) };
+        only.onchange = () => { document.body.classList.toggle("only", only.checked); if (only.checked) { SECS.forEach(x => x.classList.toggle("cur", x.id == nav.value)); scrollTo({ top: 0 }) } };
+        addEventListener("scroll", () => { if (only.checked) return; let c = SECS[0]; SECS.forEach(s => { if (s.getBoundingClientRect().top <= 110) c = s }); nav.value = c.id }, { passive: true });
+        D = sample(); render(); drawFeedback(); drawAE();
     </script>
 </body>
 
